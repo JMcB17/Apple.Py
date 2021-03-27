@@ -1,5 +1,6 @@
 import json
 import random
+import difflib
 import typing
 from pathlib import Path
 
@@ -44,6 +45,23 @@ class RunescapeCommands(utils.Cog):
         else:
             value = int(value_str)
         return value
+
+    def fuzzy_item_search(self, search_query:str, match_threshold:float=0.5):
+        """
+        Search the item ids for the given item name.
+
+        Returns the item id of the best match, or None of no match was above the match threshold.
+        """
+
+        best_match = None
+        best_match_ratio = match_threshold
+        for name, item_id in self.item_ids.items():
+            match_ratio = difflib.SequenceMatcher(a=search_query, b=name).ratio()
+            if match_ratio > best_match_ratio:
+                best_match = item_id
+                best_match_ratio = match_ratio
+
+        return best_match
 
     async def get_item_details_by_id(self, item_id:int) -> dict:
         """
@@ -94,7 +112,7 @@ class RunescapeCommands(utils.Cog):
             item_id = random.choice(list(self.item_ids.values()))
         else:
             item = item.capitalize()
-            item_id = self.item_ids.get(item)
+            item_id = self.fuzzy_item_search(item)
 
         if item_id:
             item_dict = await self.get_item_details_by_id(item_id)
